@@ -11,9 +11,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.authority.mapping.SimpleAuthorityMapper;
+import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.security.web.authentication.session.NullAuthenticatedSessionStrategy;
+import org.springframework.security.web.authentication.session.RegisterSessionAuthenticationStrategy;
+import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter;
 
 @KeycloakConfiguration
@@ -34,7 +38,7 @@ public class KeycloakAdapterConfig extends KeycloakWebSecurityConfigurerAdapter{
      */
     @Bean
     @Override
-    protected NullAuthenticatedSessionStrategy sessionAuthenticationStrategy() {
+    protected SessionAuthenticationStrategy sessionAuthenticationStrategy() {
         return new NullAuthenticatedSessionStrategy();
     }
 
@@ -59,10 +63,14 @@ public class KeycloakAdapterConfig extends KeycloakWebSecurityConfigurerAdapter{
                 .logoutSuccessUrl("/");
 
         http
+                .cors().and().csrf().disable()// without this line - userSession endpoint got 401
+                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .and()
                 .authorizeRequests()
                 .antMatchers("/products*").hasRole("USER")
                 .antMatchers("/products/*").hasRole("ADMIN")
-                .anyRequest().authenticated();
+                .antMatchers("/userSession*").permitAll()
+                .anyRequest().authenticated ();
     }
 
     @Bean
